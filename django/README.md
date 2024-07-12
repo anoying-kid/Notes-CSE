@@ -68,7 +68,9 @@ Now registering the superuser
 
 ```python
 # books/admin.py
-from django.contrib import admin from .models import Book admin.site.register(Book)
+from django.contrib import admin
+from .models import Book
+admin.site.register(Book)
 ```
 
 Run the server
@@ -150,7 +152,8 @@ Tests are a vital part of writing software and we should add them now before mov
 
 ```python
 # books/tests.py
-from django.test import TestCase from django.urls import reverse
+from django.test import TestCase
+from django.urls import reverse
 from .models import Book
 class BookTests(TestCase):
     @classmethod
@@ -163,8 +166,197 @@ class BookTests(TestCase):
         )
         
         def test_book_content(self):
-            self.assertEqual(self.book.title, "A good title") self.assertEqual(self.book.subtitle, "An excellent subtitle") self.assertEqual(self.book.author, "Tom Christie") self.assertEqual(self.book.isbn, "1234567890123")
+            self.assertEqual(self.book.title, "A good title")
+            self.assertEqual(self.book.subtitle, "An excellent subtitle")
+            self.assertEqual(self.book.author, "Tom Christie")
+            self.assertEqual(self.book.isbn, "1234567890123")
         
         def test_book_listview(self):
-            response = self.client.get(reverse("home")) self.assertEqual(response.status_code, 200) self.assertContains(response, "excellent subtitle") self.assertTemplateUsed(response, "books/book_list.html")
+            response = self.client.get(reverse("home"))
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "excellent subtitle")
+            self.assertTemplateUsed(response, "books/book_list.html")
 ```
+
+Run Tests
+```shell
+py manage.py test
+```
+
+# Creating the Api
+
+* Drf library suitable for creating api in django
+```bash
+pip install djangorestframework
+```
+* Add to `INSTALLED_APPS`
+
+```python
+# django_project/settings.py
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    # 3rd party
+    "rest_framework",  # new
+    # Local
+    "books.apps.BooksConfig",
+]
+```
+
+* Creating a new app apis
+```bash
+py manage.py startapp apis
+```
+
+* Add to `INSTALLED_APPS`
+```python
+# django_project/settings.py
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    # 3rd party
+    "rest_framework",
+    # Local
+    "books.apps.BooksConfig",
+    "apis.apps.ApisConfig",  # new
+]
+```
+
+## URLs
+
+Adding url to both the project-level
+
+```python
+# django_project/urls.py
+from django.contrib import admin
+from django.urls import path, include
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", include("apis.urls")),  # new
+    path("", include("books.urls")),
+]
+```
+
+Now in apis
+
+```python
+# apis/urls.py
+from django.urls import path
+from .views import BookAPIView
+urlpatterns = [
+    path("", BookAPIView.as_view(), name="book_list"),
+]
+```
+
+## Views
+
+Django REST Framework views are similar except the end result is serialized data in JSON format, not the content for a web page!
+
+```python
+# apis/views.py
+from rest_framework import generics from books.models import Book
+from .serializers import BookSerializer
+class BookAPIView(generics.ListAPIView): queryset = Book.objects.all() serializer_class = BookSerializer
+```
+
+## Serializers
+
+A serializer33 translates complex data like querysets and model instances into a format that is easy to consume over the internet, typically JSON.
+```python
+# apis/serializers.py
+from rest_framework import serializers from books.models import Book
+class BookSerializer(serializers.ModelSerializer): class Meta:
+        model = Book
+        fields = ("title", "subtitle", "author", "isbn")
+```
+
+## Browsable API
+
+Raw JSON data is not particularly friendly to consume with human eyes. Fortunately, Django REST Framework ships with a built-in browsable API that displays both the content and HTTP verbs associated with a given endpoint.
+
+```shell
+python manage.py runserver
+```
+
+## Tests
+
+```python
+# apis/tests.py
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+from books.models import Book
+
+class APITests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.book = Book.objects.create(
+                    title="Django for APIs",
+                    subtitle="Build web APIs with Python and Django",
+                    author="William S. Vincent",
+                    isbn="9781735467221",
+        )
+        
+    def test_api_listview(self):
+        response = self.client.get(reverse("book_list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Book.objects.count(), 1)
+        self.assertContains(response, self.book)
+```
+
+For running all the test case.
+```shell
+python manage.py test
+```
+
+For running particular app test case.
+```shell
+python manage.py test apis
+```
+
+## Static Files
+
+Creating static folder
+```shell
+mkdir static
+```
+
+Installing whitenoise
+```shell
+pip install whitenoise
+```
+
+Setup the whitenoise
+```python
+# django_project/settings.py
+INSTALLED_APPS = [
+    ...
+    "whitenoise.runserver_nostatic",  # new
+    "django.contrib.staticfiles",
+]
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # new
+    ...
+]
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]  # new
+STATIC_ROOT = BASE_DIR / "staticfiles"  # new
+STATICFILES_STORAGE =
+"whitenoise.storage.CompressedManifestStaticFilesStorage" # new
+```
+
+First time to compile all the static file directories and files into one self-contained unit suitable for deployment.
+```shell
+py manage.py collectstatic
+```
+
