@@ -269,7 +269,7 @@ class BookAPIView(generics.ListAPIView): queryset = Book.objects.all() serialize
 
 ## Serializers
 
-A serializer33 translates complex data like querysets and model instances into a format that is easy to consume over the internet, typically JSON.
+A serializer translates complex data like querysets and model instances into a format that is easy to consume over the internet, typically JSON.
 ```python
 # apis/serializers.py
 from rest_framework import serializers from books.models import Book
@@ -546,7 +546,7 @@ class DetailTodo(generics.RetrieveAPIView):
 
 Navigate to `https://127.0.0.1:8000/api`
 
-<img src="./todo/list_todo.png" height="50%" weight="50%">
+<img src="./todo/list_todo.png" style="width: 50%, height: auto">
 
 Navigate to `http://127.0.0.1:8000/api/1/.`
 
