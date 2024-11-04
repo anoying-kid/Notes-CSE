@@ -1,4 +1,4 @@
-Here's a more detailed Go notes README covering the topics you requested:
+Here's an updated version of the Go notes with additional information on Go tools and Makefiles:
 
 # Go Basics
 
@@ -208,4 +208,69 @@ func main() {
 - The `default` case in a `select` statement is executed if no other channel operation is ready.
 - This is useful for implementing non-blocking channel operations.
 
-This covers the basics of Go's syntax, data structures, and concurrency primitives. For more detailed information, refer to the official Go documentation: [https://golang.org/doc/](https://golang.org/doc/).
+## Go Tools
+
+**NOTE:** ./... is used for complete go project.
+
+### `go init`
+- `go init` creates a new Go module, which is a collection of related Go packages. e.g. `go mod init github.com/anoying-kid/projectName`
+- It sets up the necessary files and directories for a new Go project.
+
+
+### `go build`
+- `go build` compiles the Go source code in the current directory and generates an executable file.
+- It can also be used to build specific packages or files.
+
+### `go clean`
+- `go clean` removes compiled output files and temporary files.
+- It's useful for cleaning up your project before publishing or distributing it.
+
+### `go fmt`
+- `go fmt` formats Go source code according to the official Go code style.
+- It's a good practice to run `go fmt` on your code before committing changes.
+
+### `go test`
+- `go test` runs the test cases defined in your Go code.
+- It's an essential part of writing reliable and maintainable Go programs.
+
+## Makefiles
+Makefiles are used to automate the build process for your Go projects. Here's a simple example:
+
+```makefile
+# Makefile
+
+# Set the name of the executable
+BINARY_NAME=my-go-app
+
+# Set the package path
+PACKAGE_PATH=github.com/anoying-kid/Notes-CSE/Go
+
+# Set the build and run commands
+build:
+    go build -o $(BINARY_NAME) $(PACKAGE_PATH)/main.go
+
+fmt:
+		go fmt ./...
+
+vet: fmt
+		go vet ./...
+
+run:
+    ./$(BINARY_NAME)
+
+clean:
+    go clean
+    rm -f $(BINARY_NAME)
+
+.PHONY: build run clean
+```
+
+To use this Makefile, you can run the following commands:
+
+- `make build`: Compile the Go code and create the executable.
+- `make run`: Build and run the executable.
+- `make clean`: Remove the compiled executable and temporary files.
+
+Makefiles provide a consistent and reliable way to manage the build process for your Go projects, especially as they grow in complexity.
+
+This covers the basics of Go's syntax, data structures, concurrency primitives, and common tools. For more detailed information, refer to the official Go documentation: [https://golang.org/doc/](https://golang.org/doc/).
